@@ -1,88 +1,96 @@
-import hashlib
-
-class CriptoAsimetricoDeterminista:
-    def __init__(self):
-        self.p = 2**31 - 1  
-        self.__clave_privada = 987654321
-        self.generador_publico = 11
-        self.clave_publica = pow(self.generador_publico, self.__clave_privada, self.p)
-
-    def _string_a_bloques(self, texto: str, tamano_bloque: int = 3) -> list:
-        bytes_texto = texto.encode('utf-8')
-        bloques = []
-        for i in range(0, len(bytes_texto), tamano_bloque):
-            fragmento = bytes_texto[i:i+tamano_bloque]
-            num = int.from_bytes(fragmento, byteorder='big')
-            bloques.append(num)
-        return bloques
-
-    def _bloques_a_string(self, bloques: list) -> str:
-        bytes_totales = bytearray()
-        for num in bloques:
-            num_bytes = (num.bit_length() + 7) // 8 if num > 0 else 1
-            bytes_totales.extend(num.to_bytes(num_bytes, byteorder='big'))
-        return bytes_totales.decode('utf-8', errors='ignore')
-
-    def cifrar(self, mensaje: str) -> str:
-        bloques = self._string_a_bloques(mensaje)
-        bloques_cifrados = []
-        
-        for bloque in bloques:
-            hash_bloque = int(hashlib.sha256(str(bloque).encode()).hexdigest(), 16)
-            k_determinista = (hash_bloque % (self.p - 2)) + 2
-            
-            c1 = pow(self.generador_publico, k_determinista, self.p)
-            secreto_compartido = pow(self.clave_publica, k_determinista, self.p)
-            c2 = (bloque ^ secreto_compartido) % self.p
-            
-            bloques_cifrados.append(f"{c1:x}-{c2:x}")
-            
-        return ":".join(bloques_cifrados)
-
-    def descifrar(self, criptograma: str) -> str:
-        bloques_cifrados = criptograma.split(":")
-        bloques_descifrados = []
-        
-        for bloque in bloques_cifrados:
-            c1_hex, c2_hex = bloque.split("-")
-            c1 = int(c1_hex, 16)
-            c2 = int(c2_hex, 16)
-            
-            secreto_compartido = pow(c1, self.__clave_privada, self.p)
-            bloque_original = c2 ^ secreto_compartido
-            bloques_descifrados.append(bloque_original)
-            
-        return self._bloques_a_string(bloques_descifrados)
-
-
-cripto = CriptoAsimetricoDeterminista()
-
-casos_prueba = {
-    "Texto Corto": "hola",
-    "Frase Larga": "Criptografia personalizada sin patrones comerciales, ¡funciona!",
-    "Caracteres Especiales": "🔒 Cripto_N0_St4nd4rd_2026? 🚀",
-    "Datos Numericos": "192.168.1.254:8080",
-}
-
-print("=== INICIANDO PRUEBAS ===")
-
-for tipo, dato in casos_prueba.items():
-    print(f"\n[{tipo}]")
-    print(f"Original: {dato}")
-    
-    cifrado_A = cripto.cifrar(dato)
-    cifrado_B = cripto.cifrar(dato)
-    cifrado_C = cripto.cifrar(dato)
-    
-    print(f"Cifrado: {cifrado_A[:30]}...")  
-    
-    assert cifrado_A == cifrado_B == cifrado_C, "Error en cifrado"
-    
-    descifrado_final = cripto.descifrar(cifrado_A)
-    assert descifrado_final == dato, "Error en descifrado"
-    
-    print("Estado: OK")
-
-print("\n" + "="*30)
-print("TODAS LAS PRUEBAS OK")
+# Programa de cifrado de una sola via
+# Estoy practicando python :)
+# La idea: el mensaje NO se puede recuperar porque se pierde informacion
+ 
+# primero una funcion para pasar una letra a binario de 8 bits
+def letra_a_binario(letra):
+    numero = ord(letra)        # ord me da el numero de la letra
+    binario = bin(numero)      # bin lo pasa a binario pero pone "0b" adelante
+    binario = binario[2:]      # le quito el "0b"
+    # ahora relleno con ceros adelante hasta que tenga 8 bits
+    while len(binario) < 8:
+        binario = "0" + binario
+    return binario
+ 
+ 
+def cifrar(mensaje):
+    resultado = ""
+ 
+    # recorro letra por letra
+    for letra in mensaje:
+        bits = letra_a_binario(letra)
+        # print("la letra", letra, "en binario es", bits)  # esto era para probar
+ 
+        # ahora hago XOR pero de dos en dos bits
+        # si los dos bits son iguales da 0, si son diferentes da 1
+        cuatro_bits = ""
+        posicion = 0
+        while posicion < 8:
+            bit1 = bits[posicion]
+            bit2 = bits[posicion + 1]
+            if bit1 == bit2:
+                cuatro_bits = cuatro_bits + "0"
+            else:
+                cuatro_bits = cuatro_bits + "1"
+            posicion = posicion + 2
+ 
+        # aqui ya solo me quedan 4 bits (perdi la mitad)
+        # ahora relleno intercalando el patron: dato 1 dato 0 dato 1 dato 0
+        patron = "1010"
+        ocho_bits = ""
+        for i in range(4):
+            ocho_bits = ocho_bits + cuatro_bits[i]   # un dato
+            ocho_bits = ocho_bits + patron[i]        # un bit del patron
+ 
+        # convierto esos 8 bits otra vez en una letra
+        numero = int(ocho_bits, 2)
+        letra_cifrada = chr(numero)
+        resultado = resultado + letra_cifrada
+ 
+    return resultado
+ 
+ 
+def descifrar(mensaje_cifrado):
+    resultado = ""
+ 
+    for letra in mensaje_cifrado:
+        bits = letra_a_binario(letra)
+ 
+        # el patron estaba en las posiciones 1, 3, 5, 7
+        # entonces mis datos estan en las posiciones 0, 2, 4, 6
+        datos = ""
+        datos = datos + bits[0]
+        datos = datos + bits[2]
+        datos = datos + bits[4]
+        datos = datos + bits[6]
+ 
+        # trato de devolver los 8 bits, pero como no se que habia en cada par
+        # pongo un 0 al lado y ya. (por eso no va a salir igual)
+        ocho_bits = ""
+        for i in range(4):
+            ocho_bits = ocho_bits + datos[i]
+            ocho_bits = ocho_bits + "0"
+ 
+        numero = int(ocho_bits, 2)
+        resultado = resultado + chr(numero)
+ 
+    return resultado
+ 
+ 
+# parte principal del programa
+mensaje = input("Escribe una frase: ")
+ 
+encriptado = cifrar(mensaje)
+desencriptado = descifrar(encriptado)
+ 
+print("Mensaje original: ", mensaje, "(", len(mensaje), "letras )")
+print("Encriptado:       ", encriptado, "(", len(encriptado), "letras )")
+print("Desencriptado:    ", desencriptado, "(", len(desencriptado), "letras )")
+ 
+# compruebo si se recupero el mensaje
+if desencriptado == mensaje:
+    print("Se pudo recuperar el mensaje")
+else:
+    print("NO se pudo recuperar el mensaje (asi tiene que ser, es de una sola via)")
+ 
 print("="*30)
