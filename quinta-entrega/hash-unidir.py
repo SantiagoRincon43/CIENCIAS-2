@@ -104,10 +104,8 @@ def mostrar_resultado(res: dict, mensaje: str):
         print(f"  ✓  Sin colisión registrada")
 
 def menu():
-    print("\n" + "═" * 62)
     print("   HASH DE UNA SOLA VÍA — Universidad Distrital")
     print("   Ciencias de la Computación II  |  Entrega #4 (Plus)")
-    print("═" * 62)
     print("\nSelecciona el tamaño del hash:")
     print("  [1] 64 bits  (16 hex chars)")
     print("  [2] 128 bits (32 hex chars)  ← predeterminado")
