@@ -1,8 +1,8 @@
 import java.util.*;
 
-class ConvexHullFinder {
+public class GrahamScanHull {
 
-    static class GridPoint {
+    public static class GridPoint {
         double coordX, coordY;
 
         GridPoint(double coordX, double coordY) {
@@ -19,7 +19,7 @@ class ConvexHullFinder {
         }
     }
 
-    static int getDirection(GridPoint p1, GridPoint p2, GridPoint p3) {
+    public static int getDirection(GridPoint p1, GridPoint p2, GridPoint p3) {
         double crossProduct = p1.coordX * (p2.coordY - p3.coordY) + 
                              p2.coordX * (p3.coordY - p1.coordY) + 
                              p3.coordX * (p1.coordY - p2.coordY);
@@ -29,13 +29,13 @@ class ConvexHullFinder {
         return 0;
     }
 
-    static double getSquaredDistance(GridPoint origin, GridPoint target) {
+    public static double getSquaredDistance(GridPoint origin, GridPoint target) {
         double diffX = origin.coordX - target.coordX;
         double diffY = origin.coordY - target.coordY;
         return (diffX * diffX) + (diffY * diffY);
     }
 
-    static int[][] computeBoundary(int[][] coordinateMatrix) {
+    public static int[][] computeBoundary(int[][] coordinateMatrix) {
         int totalPoints = coordinateMatrix.length;
 
         if (totalPoints < 3) return new int[][]{{-1}};
